@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PDF Translator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+  <style>
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      text-align: center;
+      background-color: aliceblue;
+      padding: 20px;
+    }
+    select, button, input[type="file"] {
+      font-size: 16px;
+      font-style: italic;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 10px;
+      background-color: aquamarine;
+      box-shadow: 1px 2px 3px rgba(0,0,0,0.2);
+    }
+    #result {
+      background: white;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 8px;
+      box-shadow: 1px 2px 5px rgba(0,0,0,0.1);
+      white-space: pre-wrap;
+      font-size: 16px;
+      max-width: 90%;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Translate PDF</h1>
+  <p style="color:red;">NOTE:do not upload doc. with morethan the limit of this is 500 chars</p>
+
+  <input type="file" id="pdfFile" accept=".pdf"><br>
+
+  <select id="from">
+    <option value="en">English</option>
+    <option value="ha">Hausa</option>
+    <option value="yo">Yoruba</option>
+    <option value="ig">Igbo</option>
+    <option value="ar">Arabic</option>
+  </select>
+
+  <select id="to">
+    <option value="ha">Hausa</option>
+    <option value="yo">Yoruba</option>
+    <option value="ig">Igbo</option>
+    <option value="ar">Arabic</option>
+    <option value="en">English</option>
+  </select>
+
+  <button onclick="handlePDF()">Upload & Translate</button>
+  <a href="index.html"><button>back to text</button></a>
+
+  <div id="result">Translated text will appear here...</div>
+
+  <script>
+    alert("Upload a PDF file.\nThen select languages to translate it using MyMemory API.");
+
+    async function handlePDF() {
+      const file = document.getElementById('pdfFile').files[0];
+      const resultDiv = document.getElementById('result');
+      const from = document.getElementById('from').value;
+      const to = document.getElementById('to').value;
+
+      if (!file || file.type !== "application/pdf") {
+        resultDiv.textContent = "Please upload a valid PDF file.";
+        return;
+      }
+
+      const fileReader = new FileReader();
+      fileReader.onload = async function () {
+        const typedarray = new Uint8Array(this.result);
+
+        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+        let fullText = "";
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(" ");
+          fullText += pageText + "\n";
+        }
+
+        resultDiv.textContent = "Translating...";
+
+        // Limit: MyMemory API has a text length limit (~500-1000 chars per request)
+        const maxLength = 500;
+        const chunks = splitText(fullText, maxLength);
+
+        let translatedFull = "";
+        for (const chunk of chunks) {
+          const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=${from}|${to}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          translatedFull += data.responseData.translatedText + "\n";
+        }
+
+        resultDiv.textContent = translatedFull;
+      };
+
+      fileReader.readAsArrayBuffer(file);
+    }
+
+    function splitText(text, maxLength) {
+      const sentences = text.match(/[^\.!\?]+[\.!\?]+/g) || [text]; // basic sentence split
+      let chunks = [], current = "";
+
+      for (let sentence of sentences) {
+        if ((current + sentence).length > maxLength) {
+          chunks.push(current.trim());
+          current = sentence;
+        } else {
+          current += sentence;
+        }
+      }
+      if (current) chunks.push(current.trim());
+      return chunks;
+    }
+  </script>
+
+</body>
+</html>

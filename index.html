@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quick Translator with MyMemory API</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      text-align: center;
+      background-color: aliceblue;
+      padding: 20px;
+    }
+
+    textarea, select, button {
+      font-size: 16px;
+      font-style: italic;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 10px;
+      background-color: aquamarine;
+      box-shadow: 1px 2px 3px rgba(0,0,0,0.2);
+    }
+
+    #result {
+      background: white;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 8px;
+      box-shadow: 1px 2px 5px rgba(0,0,0,0.1);
+      white-space: pre-wrap;
+      font-size: 16px;
+    }
+
+    h1 {
+      text-shadow: aquamarine 1px 2px 1px;
+      color: rgb(67, 1, 1);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Text Translator</h1>
+  <p style="color:red;">NOTE:the limit of this is 500 chars</p>
+  <textarea id="input" rows="5" cols="50" placeholder="Enter text to translate..."></textarea><br>
+
+  <select id="from">
+    <option value="en">English</option>
+    <option value="ha">Hausa</option>
+    <option value="yo">Yoruba</option>
+    <option value="ig">Igbo</option>
+    <option value="ar">Arabic</option>
+  </select>
+
+  <select id="to">
+    <option value="ha">Hausa</option>
+    <option value="yo">Yoruba</option>
+    <option value="ig">Igbo</option>
+    <option value="ar">Arabic</option>
+    <option value="en">English</option>
+  </select>
+
+  <button onclick="trl()">Translate</button>
+  <a href="pdf.html"><button>upload PDF</button></a>
+
+  <div id="result"></div>
+
+  <script>
+    alert("You can also press Enter to submit your translation input.");
+
+    const trl = () => {
+      const input = document.getElementById('input');
+      const result = document.getElementById('result');
+      const from = document.getElementById('from');
+      const to = document.getElementById('to');
+
+      const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(input.value) + "&langpair=" + from.value + "|" + to.value;
+
+      const request = new XMLHttpRequest();
+      request.open("GET", url, false);
+      request.send();
+
+      const ans = JSON.parse(request.response);
+      result.innerHTML = ans.responseData.translatedText;
+    };
+
+    // Trigger translation on Enter key
+    document.onkeydown = (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault(); // Prevent newline in textarea
+        trl();
+      }
+    };
+  </script>
+
+</body>
+</html>
